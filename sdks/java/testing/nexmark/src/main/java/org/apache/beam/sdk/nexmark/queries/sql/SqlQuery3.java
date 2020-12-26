@@ -22,11 +22,8 @@ import org.apache.beam.sdk.extensions.sql.impl.CalciteQueryPlanner;
 import org.apache.beam.sdk.extensions.sql.impl.QueryPlanner;
 import org.apache.beam.sdk.extensions.sql.zetasql.ZetaSQLQueryPlanner;
 import org.apache.beam.sdk.nexmark.NexmarkConfiguration;
-import org.apache.beam.sdk.nexmark.model.Auction;
-import org.apache.beam.sdk.nexmark.model.Event;
+import org.apache.beam.sdk.nexmark.model.*;
 import org.apache.beam.sdk.nexmark.model.Event.Type;
-import org.apache.beam.sdk.nexmark.model.NameCityStateId;
-import org.apache.beam.sdk.nexmark.model.Person;
 import org.apache.beam.sdk.nexmark.model.sql.SelectEvent;
 import org.apache.beam.sdk.nexmark.queries.NexmarkQueryTransform;
 import org.apache.beam.sdk.nexmark.queries.Query3;
@@ -68,17 +65,32 @@ import org.joda.time.Duration;
  *
  * <p>Correct join semantics implementation is tracked in BEAM-3190, BEAM-3191
  */
-public class SqlQuery3 extends NexmarkQueryTransform<NameCityStateId> {
+public class SqlQuery3 extends NexmarkQueryTransform<NameCityStatePrice> {
+
+//  private static final String QUERY =
+//      ""
+//          + " SELECT "
+//          + "    P.name, P.city, P.state, B.price"
+//          + " FROM "
+//          + "    Auction A INNER JOIN Person P on A.seller = P.id "
+//          + "       INNER JOIN Bid B on B.bidder = P.id";
+
+//            + " WHERE "
+//                    + "    A.category = 10"
+//                    + "    AND (P.state = 'CA')";
 
   private static final String QUERY =
-      ""
-          + " SELECT "
-          + "    P.name, P.city, P.state, A.id "
-          + " FROM "
-          + "    Auction A INNER JOIN Person P on A.seller = P.id "
-          + " WHERE "
-          + "    A.category = 10 "
-          + "    AND (P.state = 'OR' OR P.state = 'ID' OR P.state = 'CA')";
+          ""
+                  + " SELECT "
+                  + "    P.name, P.city, P.state, B.price"
+                  + " FROM "
+                  + "    Person P"
+                  + "       INNER JOIN Bid B on B.bidder = P.id"
+                  + "           INNER JOIN Auction A on A.seller = P.id";
+
+//                  + " WHERE "
+//                  + "    A.category = 10"
+//                  + "    AND (P.state = 'CA')";
 
   private final NexmarkConfiguration configuration;
   private final Class<? extends QueryPlanner> plannerClass;
@@ -99,7 +111,7 @@ public class SqlQuery3 extends NexmarkQueryTransform<NameCityStateId> {
   }
 
   @Override
-  public PCollection<NameCityStateId> expand(PCollection<Event> allEvents) {
+  public PCollection<NameCityStatePrice> expand(PCollection<Event> allEvents) {
     PCollection<Event> windowed =
         allEvents.apply(
             Window.into(FixedWindows.of(Duration.standardSeconds(configuration.windowSizeSec))));
@@ -111,17 +123,24 @@ public class SqlQuery3 extends NexmarkQueryTransform<NameCityStateId> {
             .apply(getName() + ".ToRecords." + auctionName, new SelectEvent(Type.AUCTION));
 
     String personName = Person.class.getSimpleName();
+
     PCollection<Row> people =
         windowed
             .apply(getName() + ".Filter." + personName, Filter.by(e -> e.newPerson != null))
             .apply(getName() + ".ToRecords." + personName, new SelectEvent(Type.PERSON));
 
+    PCollection<Row> bid =
+            windowed
+                    .apply(getName() + ".Filter." + personName, Filter.by(e -> e.bid != null))
+                    .apply(getName() + ".ToRecords." + personName, new SelectEvent(Type.BID));
+
     PCollectionTuple inputStreams =
         PCollectionTuple.of(new TupleTag<>("Auction"), auctions)
-            .and(new TupleTag<>("Person"), people);
+            .and(new TupleTag<>("Person"), people)
+            .and(new TupleTag<>("Bid"), bid);
 
     return inputStreams
         .apply(SqlTransform.query(QUERY).withQueryPlannerClass(plannerClass))
-        .apply(Convert.fromRows(NameCityStateId.class));
+        .apply(Convert.fromRows(NameCityStatePrice.class));
   }
 }

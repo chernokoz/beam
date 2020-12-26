@@ -91,7 +91,7 @@ public class NexmarkConfiguration implements Serializable {
    * Number of events to generate. If zero, generate as many as possible without overflowing
    * internal counters etc.
    */
-  @JsonProperty public long numEvents = 100000;
+  @JsonProperty public long numEvents = 1000000; // DEFAULT 100000
 
   /** Number of event generators to use. Each generates events in its own timeline. */
   @JsonProperty public int numEventGenerators = 100;
@@ -100,10 +100,10 @@ public class NexmarkConfiguration implements Serializable {
   @JsonProperty public NexmarkUtils.RateShape rateShape = NexmarkUtils.RateShape.SINE;
 
   /** Initial overall event rate (in {@link #rateUnit}). */
-  @JsonProperty public int firstEventRate = 10000;
+  @JsonProperty public int firstEventRate = 100000; // DEFAULT 10000
 
   /** Next overall event rate (in {@link #rateUnit}). */
-  @JsonProperty public int nextEventRate = 10000;
+  @JsonProperty public int nextEventRate = 100000; // DEFAULT 10000
 
   /** Unit for rates. */
   @JsonProperty public NexmarkUtils.RateUnit rateUnit = NexmarkUtils.RateUnit.PER_SECOND;
@@ -118,7 +118,7 @@ public class NexmarkConfiguration implements Serializable {
   @JsonProperty public int preloadSeconds = 0;
 
   /** Timeout for stream pipelines to stop in seconds. */
-  @JsonProperty public int streamTimeout = 240;
+  @JsonProperty public int streamTimeout = 240; //DEFAULT 240
 
   /**
    * If true, and in streaming mode, generate events only when they are due according to their
@@ -134,7 +134,7 @@ public class NexmarkConfiguration implements Serializable {
   @JsonProperty public boolean useWallclockEventTime = false;
 
   /** Average idealized size of a 'new person' event, in bytes. */
-  @JsonProperty public int avgPersonByteSize = 200;
+  @JsonProperty public int avgPersonByteSize = 2000; // DEFAULT 200
 
   /** Average idealized size of a 'new auction' event, in bytes. */
   @JsonProperty public int avgAuctionByteSize = 500;
